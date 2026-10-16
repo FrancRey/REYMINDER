@@ -48,6 +48,8 @@ def init_db():
             )
         """)
 
+init_db()
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
