@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · REYMINDER{% endblock %}
+{% block body %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">R</span><span>REY<span class="brand-light">MINDER</span></span></a>
+    <div class="sidebar-label">WORKSPACE</div>
+    <a class="nav-link active" href="{{ url_for('dashboard') }}"><span>▦</span> Dashboard</a>
+    <a class="nav-link" href="#calendar-section"><span>▣</span> Calendar</a>
+    <a class="nav-link" href="#reminder-list"><span>☷</span> My reminders</a>
+    <div class="sidebar-label sidebar-label-lower">YOUR ROUTINES</div>
+    <a class="nav-link" href="#new-reminder"><span class="nav-dot dot-orange"></span> Home & safety</a>
+    <a class="nav-link" href="#new-reminder"><span class="nav-dot dot-green"></span> Personal</a>
+    <div class="sidebar-bottom">
+      <a class="nav-link" href="{{ url_for('privacy') }}"><span>⌑</span> Privacy policy</a>
+      <button class="theme-toggle" type="button" data-theme-toggle><span data-theme-icon>☾</span><span data-theme-label>Dark mode</span></button>
+      <div class="profile-row"><div class="avatar">{{ session.get('user_name','U')[0]|upper }}</div><div class="profile-info"><strong>{{ session.get('user_name','User') }}</strong><small>Personal account</small></div><form method="post" action="{{ url_for('logout') }}"><button class="icon-button" title="Log out" aria-label="Log out">↗</button></form></div>
+    </div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><div><span class="eyebrow">YOUR PERSONAL SPACE</span><h1>Good to see you, {{ session.get('user_name','there').split(' ')[0] }} <span class="wave">✳</span></h1><p class="muted">A little preparation goes a long way.</p></div><div class="topbar-date">{{ now_label if now_label else '' }}</div></header>
+    <section class="welcome-banner">
+      <div><span class="eyebrow banner-eyebrow">A MOMENT FOR YOURSELF</span><h2>Before you head out...</h2><p>Take a breath. Check the little things. Leave feeling ready.</p><a class="button button-light" href="#new-reminder">＋ Add a reminder</a></div>
+      <div class="banner-art" aria-hidden="true"><div class="sun-shape"></div><div class="art-card"><span>TODAY'S INTENTION</span><strong>Leave with<br>peace of mind.</strong><div class="art-check">✓ Ready when you are</div></div></div>
+    </section>
+    <section class="stats-grid">
+      <article class="stat-card"><div class="stat-icon icon-peach">☷</div><span class="stat-label">Total reminders</span><strong class="stat-number">{{ total }}</strong><small>Saved in your space</small></article>
+      <article class="stat-card"><div class="stat-icon icon-green">✓</div><span class="stat-label">Completed</span><strong class="stat-number">{{ completed }}</strong><small>Small wins count</small></article>
+      <article class="stat-card"><div class="stat-icon icon-yellow">◷</div><span class="stat-label">Still to check</span><strong class="stat-number">{{ total - completed }}</strong><small>One step at a time</small></article>
+    </section>
+    <div class="content-grid">
+      <section class="panel" id="new-reminder">
+        <div class="panel-heading"><div><span class="eyebrow">MAKE SPACE FOR IT</span><h2>Add a reminder</h2></div><span class="heading-icon">＋</span></div>
+        <form method="post" action="{{ url_for('create_reminder') }}" class="form-stack">
+          <label for="title">What do you need to remember?</label><input id="title" name="title" type="text" placeholder="e.g. Check if the stove is off" maxlength="120" required>
+          <label for="notes">A little detail <span class="optional">(optional)</span></label><textarea id="notes" name="notes" rows="2" placeholder="Add a note to help you remember..."></textarea>
+          <div class="form-two"><div><label for="category">Category</label><select id="category" name="category"><option>Home & Safety</option><option>School</option><option>Work</option><option>Personal</option><option>Errands</option></select></div><div><label for="due_at">Date and time</label><input id="due_at" name="due_at" type="datetime-local" required></div></div>
+          <button class="button button-primary button-full" type="submit">Save reminder <span>→</span></button>
+        </form>
+      </section>
+      <section class="panel" id="calendar-section">
+        <div class="panel-heading"><div><span class="eyebrow">YOUR SCHEDULE</span><h2>Calendar</h2></div><span class="heading-icon">▦</span></div>
+        <div class="calendar-controls"><button class="icon-button" id="prev-month" type="button" aria-label="Previous month">‹</button><strong id="calendar-month">Month Year</strong><button class="icon-button" id="next-month" type="button" aria-label="Next month">›</button></div>
+        <div class="calendar-grid calendar-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="calendar-grid" id="calendar-days" aria-label="Calendar dates"></div>
+        <div class="calendar-legend"><span class="legend-dot"></span> Today <span class="legend-dot legend-reminder"></span> Has reminders</div>
+        <div class="selected-day-list"><strong id="selected-date-label">Select a date</strong><div id="selected-date-items" class="muted small-text">Choose a date to see scheduled reminders.</div></div>
+      </section>
+    </div>
+    <section class="panel reminder-panel" id="reminder-list">
+      <div class="panel-heading"><div><span class="eyebrow">YOUR NEXT STEPS</span><h2>Upcoming reminders</h2></div><span class="count-pill">{{ reminders|length }} items</span></div>
+      {% if reminders %}
+      <div class="reminder-list">
+        {% for item in reminders %}
+        <article class="reminder-item {% if item.completed %}is-complete{% endif %}" data-reminder-date="{{ item.due_at[:10] }}" data-reminder-title="{{ item.title|e }}" data-reminder-completed="{{ item.completed }}">
+          <form method="post" action="{{ url_for('toggle_reminder', reminder_id=item.id) }}"><button class="round-check" type="submit" aria-label="Toggle completion">{% if item.completed %}✓{% endif %}</button></form>
+          <div class="reminder-details"><strong>{{ item.title }}</strong>{% if item.notes %}<p>{{ item.notes }}</p>{% endif %}<div class="reminder-meta"><span>{{ item.category }}</span><span>·</span><span>{{ item.due_at.replace('T',' ') }}</span></div></div>
+          <span class="status-pill {% if item.completed %}status-done{% else %}status-pending{% endif %}">{% if item.completed %}Completed{% else %}To do{% endif %}</span>
+          <form method="post" action="{{ url_for('delete_reminder', reminder_id=item.id) }}" onsubmit="return confirm('Delete this reminder?')"><button class="icon-button delete-button" type="submit" aria-label="Delete reminder" title="Delete">×</button></form>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="empty-icon">☼</div><h3>Your space is ready</h3><p>Add your first reminder and make it easier to remember the little things.</p><a href="#new-reminder" class="text-link">Create your first reminder →</a></div>
+      {% endif %}
+    </section>
+  </main>
+</div>
+<script id="reminder-data" type="application/json">{{ reminders|tojson }}</script>
+{% endblock %}
